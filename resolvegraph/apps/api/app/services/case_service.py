@@ -418,14 +418,19 @@ class CaseService:
 
             self.db.commit()
 
-            # Record Audit Event
+            # Record Audit Event with Rich Decision Metadata
             self._record_audit(
                 case_id,
                 "DYNAMIC_REPLANNING_EXECUTED",
                 f"Dynamic replanning executed: {replan_res.get('replan_reason')}. Invalidated: {replan_res.get('invalidated_tasks')}, Created: {replan_res.get('new_tasks')}",
-                "New evidence received altering case state",
+                replan_res.get("replan_reason"),
                 submitted_by,
                 {
+                    "rule_id": replan_res.get("rule_id", "RULE-JUR-01"),
+                    "why": replan_res.get("replan_reason"),
+                    "shift": replan_res.get("shift"),
+                    "old_authority": replan_res.get("old_authority"),
+                    "new_authority": replan_res.get("new_authority"),
                     "invalidated_tasks": replan_res.get("invalidated_tasks"),
                     "new_tasks": replan_res.get("new_tasks")
                 }
@@ -456,6 +461,10 @@ class CaseService:
         )
 
         case = self.db.query(CaseModel).filter(CaseModel.id == case_id).first()
+        checklist = verification_result.get("checklist", [])
+        passed_gates = [c["criterion"] for c in checklist if c.get("passed")]
+        failed_gates = [c["criterion"] for c in checklist if not c.get("passed")]
+
         if verification_result.get("can_close"):
             case.status = "RESOLVED"
             self._record_audit(
@@ -463,7 +472,12 @@ class CaseService:
                 "CASE_VERIFIED_AND_RESOLVED",
                 "Case achieved evidence-based resolution and passed all closure criteria.",
                 "Formal closure authorized.",
-                "Grievance Officer"
+                "Grievance Officer",
+                {
+                    "rule_id": "RULE-CLOSURE-VERIFIED",
+                    "why": "All 5 statutory closure criteria satisfied",
+                    "passed_gates": passed_gates
+                }
             )
         else:
             case.status = "RESOLUTION_CANDIDATE" if any(t["status"] == "COMPLETED" for t in task_dicts) else case.status
@@ -472,11 +486,19 @@ class CaseService:
                 "CLOSURE_VERIFICATION_REJECTED",
                 f"Closure rejected: {'; '.join(verification_result.get('blocking_reasons', []))}",
                 "Premature closure prevented by policy checks",
-                "VERIFICATION_ENGINE"
+                "VERIFICATION_ENGINE",
+                {
+                    "rule_id": "RULE-CLOSURE-GATE-FAILED",
+                    "why": f"Closure prevented by {len(failed_gates)} gate failure(s): {'; '.join(verification_result.get('blocking_reasons', []))}",
+                    "failed_gates": failed_gates,
+                    "passed_gates": passed_gates,
+                    "blocking_reasons": verification_result.get("blocking_reasons", [])
+                }
             )
 
         self.db.commit()
         return verification_result
+
 
     def resolve_missing_info(self, case_id: str, field_name: str, value: str, submitted_by: str) -> Dict[str, Any]:
         miss = self.db.query(MissingInfoModel).filter(

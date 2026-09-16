@@ -181,9 +181,6 @@ cp .env.example .env
 
 #### 2. Backend Setup & Testing
 ```bash
-# Install Python dependencies (if needed)
-pip install -r requirements.txt
-
 # Run pytest backend test suite
 pytest
 

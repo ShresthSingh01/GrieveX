@@ -40,17 +40,62 @@ class ReplanningEngine:
         new_authority = None
         old_authority = None
 
-        # Check for Jurisdiction Evidence
-        if "pwd" in content_lower and ("belongs to pwd" in content_lower or "trunk infrastructure" in content_lower or "pwd jurisdiction" in content_lower):
-            replan_reason = "New official cadastral survey evidence confirms asset belongs to PWD trunk network"
+        # Rules matrix for dynamic replanning across multi-agency scenarios
+        REPLAN_RULES = [
+            {
+                "rule_id": "RULE-JUR-PWD",
+                "keywords": ["pwd", "trunk", "public works", "arterial", "cadastral"],
+                "old_authority": "Municipality",
+                "new_authority": "PWD",
+                "reason": "Official cadastral survey/demarcation confirms asset belongs to PWD Trunk Network"
+            },
+            {
+                "rule_id": "RULE-JUR-MUN",
+                "keywords": ["municipality", "municipal", "ward", "colony drain", "nagar nigam"],
+                "old_authority": "PWD",
+                "new_authority": "Municipality",
+                "reason": "Revenue order confirms municipal ULB jurisdiction over localized drain asset"
+            },
+            {
+                "rule_id": "RULE-JUR-ELEC",
+                "keywords": ["electric", "bescom", "discom", "power", "transformer", "pole", "wire"],
+                "old_authority": "Municipality",
+                "new_authority": "Electricity Board",
+                "reason": "Electrical utility hazard identified; jurisdiction transferred to Electricity DISCOM"
+            },
+            {
+                "rule_id": "RULE-JUR-HIGHWAY",
+                "keywords": ["nhai", "highway", "state highway", "bypass", "expressway"],
+                "old_authority": "Municipality",
+                "new_authority": "Highway Authority",
+                "reason": "Right-of-way inspection confirms asset belongs to National/State Highway Authority"
+            },
+            {
+                "rule_id": "RULE-JUR-REVENUE",
+                "keywords": ["collectorate", "revenue", "tehsildar", "land survey", "encroachment"],
+                "old_authority": "Municipality",
+                "new_authority": "District Collectorate",
+                "reason": "Encroachment dispute transferred to District Collectorate Revenue Division"
+            }
+        ]
+
+        matched_rule = None
+        for rule in REPLAN_RULES:
+            if any(kw in content_lower for kw in rule["keywords"]):
+                matched_rule = rule
+                break
+
+        if matched_rule:
+            replan_reason = matched_rule["reason"]
+            old_authority = matched_rule["old_authority"]
+            new_authority = matched_rule["new_authority"]
+            authority_changed = True
+        elif "pwd" in content_lower:
+            replan_reason = "Cadastral survey evidence confirms asset belongs to PWD trunk network"
             old_authority = "Municipality"
             new_authority = "PWD"
             authority_changed = True
-        elif "municipality" in content_lower and ("belongs to municipality" in content_lower or "municipal asset" in content_lower):
-            replan_reason = "New revenue order confirms municipal jurisdiction over drain asset"
-            old_authority = "PWD"
-            new_authority = "Municipality"
-            authority_changed = True
+
 
         if authority_changed and new_authority and old_authority:
             # Find tasks assigned to old_authority that represent physical execution or inspection
@@ -122,7 +167,11 @@ class ReplanningEngine:
 
         return {
             "plan_changed": plan_changed,
+            "rule_id": matched_rule.get("rule_id", "RULE-JUR-01") if matched_rule else "RULE-JUR-01",
             "replan_reason": replan_reason if plan_changed else "Evidence recorded without plan alteration",
+            "old_authority": old_authority,
+            "new_authority": new_authority,
+            "shift": f"{old_authority} → {new_authority}" if authority_changed else None,
             "invalidated_tasks": invalidated_tasks,
             "new_tasks": [t["id"] for t in new_tasks],
             "tasks": all_updated_tasks,
@@ -134,3 +183,4 @@ class ReplanningEngine:
                 "submitted_by": submitted_by
             }
         }
+

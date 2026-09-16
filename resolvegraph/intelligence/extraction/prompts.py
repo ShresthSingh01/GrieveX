@@ -18,10 +18,10 @@ GRIEVANCE TEXT:
 
 Return a valid JSON object with the keys:
 - goal: string
-- claims: list of objects {id, text, category, confidence}
-- authorities: list of objects {id, name, role, department, confidence}
-- conflicts: list of objects {id, claim_text, party_a, party_b, description, status}
-- missing_information: list of objects {id, field_name, description, importance, action_required}
+- claims: list of objects {{id, text, category, confidence}}
+- authorities: list of objects {{id, name, role, department, confidence}}
+- conflicts: list of objects {{id, claim_text, party_a, party_b, description, status}}
+- missing_information: list of objects {{id, field_name, description, importance, action_required}}
 - suggested_workflows: list of strings from ["jurisdiction_dispute", "infrastructure_damage", "welfare_pension", "municipal_maintenance"]
 - confidence: float
 """

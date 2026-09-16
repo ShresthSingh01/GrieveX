@@ -135,6 +135,18 @@ class DAGBuilder:
             x = 80 + (d * 280)
             y = 80 + (idx_in_layer * 150)
 
+            auth_str = str(t.get("authority", "")).lower()
+            if "pwd" in auth_str:
+                auth_color = "#3b82f6"  # Blue
+            elif "electricity" in auth_str or "discom" in auth_str:
+                auth_color = "#f59e0b"  # Amber
+            elif "highway" in auth_str or "nhai" in auth_str:
+                auth_color = "#8b5cf6"  # Violet
+            elif "collectorate" in auth_str or "revenue" in auth_str:
+                auth_color = "#ef4444"  # Red
+            else:
+                auth_color = "#10b981"  # Emerald (Municipality default)
+
             nodes.append({
                 "id": t["id"],
                 "type": "taskNode",
@@ -143,6 +155,7 @@ class DAGBuilder:
                     "id": t["id"],
                     "title": t["title"],
                     "authority": t["authority"],
+                    "authority_color": auth_color,
                     "status": t["status"],
                     "risk_level": t["risk_level"],
                     "requires_human_approval": t.get("requires_human_approval", False),
@@ -152,6 +165,7 @@ class DAGBuilder:
                     "invalidated": t.get("invalidated", False)
                 }
             })
+
 
             for dep_id in t.get("dependencies", []):
                 edges.append({

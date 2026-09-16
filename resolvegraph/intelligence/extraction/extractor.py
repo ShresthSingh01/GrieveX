@@ -106,7 +106,7 @@ class GrievanceExtractor:
             import google.generativeai as genai
             genai.configure(api_key=self.api_key)
             model = genai.GenerativeModel(
-                model_name="gemini-1.5-flash",
+                model_name="gemini-flash-latest",
                 generation_config={"response_mime_type": "application/json"}
             )
             prompt = EXTRACTION_SYSTEM_PROMPT + "\n\n" + EXTRACTION_USER_PROMPT_TEMPLATE.format(complaint_text=text)
