@@ -1,0 +1,70 @@
+{
+  "goal": "Commercial Demolition Damage and Compensation Demand",
+  "claims": [
+    {
+      "id": "CLM-1",
+      "text": "Accidental demolition of private property outside encroachment zone",
+      "category": "factual_claim",
+      "confidence": 0.98
+    },
+    {
+      "id": "CLM-2",
+      "text": "Financial loss and inventory destruction worth Rs 12,00,000",
+      "category": "factual_claim",
+      "confidence": 0.98
+    },
+    {
+      "id": "CLM-3",
+      "text": "Demand for financial compensation and stay on demolition",
+      "category": "factual_claim",
+      "confidence": 0.98
+    }
+  ],
+  "authorities": [
+    {
+      "id": "AUTH-1",
+      "name": "Town Planning Authority",
+      "role": "Nodal Jurisdiction for Town Planning Authority",
+      "department": "Town Planning Authority",
+      "confidence": 0.95
+    },
+    {
+      "id": "AUTH-2",
+      "name": "Revenue Department",
+      "role": "Nodal Jurisdiction for Revenue Department",
+      "department": "Revenue Department",
+      "confidence": 0.95
+    },
+    {
+      "id": "AUTH-3",
+      "name": "District Magistrate Office",
+      "role": "Nodal Jurisdiction for District Magistrate Office",
+      "department": "District Magistrate Office",
+      "confidence": 0.95
+    }
+  ],
+  "conflicts": [
+    {
+      "id": "CONF-1",
+      "claim_text": "Encroachment demarcation vs registered private title deed boundary",
+      "party_a": "Town Planning Authority",
+      "party_b": "Revenue Department",
+      "description": "Jurisdiction dispute: Encroachment demarcation vs registered private title deed boundary",
+      "status": "UNRESOLVED"
+    }
+  ],
+  "missing_information": [
+    {
+      "id": "MISS-1",
+      "field_name": "Registered property deed and commercial inventory loss audit report",
+      "description": "Required resolution information: Registered property deed and commercial inventory loss audit report",
+      "importance": "BLOCKING",
+      "action_required": "Request Registered property deed and commercial inventory loss audit report from citizen / revenue records"
+    }
+  ],
+  "suggested_workflows": [
+    "infrastructure_damage"
+  ],
+  "confidence": 0.99,
+  "extractor_mode": "seed_ground_truth"
+}

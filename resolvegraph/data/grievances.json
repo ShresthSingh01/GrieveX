@@ -1,0 +1,101 @@
+[
+  {
+    "id": "GRV-001",
+    "title": "Severe Residential Flooding & Blocked Main Arterial Drain",
+    "complaint": "My house at 42 Rajendra Nagar is repeatedly flooded during every rain because the main arterial stormwater drain outside is severely blocked with debris. The Municipality ward officer claims the arterial drain falls under PWD jurisdiction and refuses to clear it, while PWD local office has not responded to multiple visits. The backflow is now causing structural dampness and severe property damage to my boundary wall.",
+    "citizen_name": "Ramesh Verma",
+    "location": "Ward 14, Rajendra Nagar, Zone 3",
+    "category": "drainage_roads",
+    "expected_authorities": ["Municipality", "PWD", "Revenue"],
+    "expected_claims": [
+      "Residential flooding caused by blocked arterial drain",
+      "Municipality claims drain belongs to PWD",
+      "PWD unresponsive to grievance",
+      "Property boundary wall experiencing structural damage"
+    ],
+    "expected_conflicts": [
+      "Drain jurisdiction and maintenance responsibility between Municipality and PWD"
+    ],
+    "expected_missing_info": [
+      "Exact municipal revenue ward cadastral drain asset identifier"
+    ],
+    "initial_assumed_authority": "Municipality"
+  },
+  {
+    "id": "GRV-002",
+    "title": "Discontinued Senior Citizen Disability Pension",
+    "complaint": "My monthly disability pension has suddenly stopped being credited to my bank account for the past 4 months. The local bank branch manager says the welfare department did not disburse the pension batch, whereas the social security office tells me to check with the bank. I have no other source of livelihood.",
+    "citizen_name": "Saraswati Devi",
+    "location": "Sector 9, Civil Lines",
+    "category": "welfare_pension",
+    "expected_authorities": ["Social Welfare Department", "Public Sector Bank"],
+    "expected_claims": [
+      "Disability pension not credited for 4 consecutive months",
+      "Contradictory explanations between bank branch and social security office"
+    ],
+    "expected_conflicts": [
+      "Disbursement status discrepancy between Welfare Treasury and Disbursement Bank"
+    ],
+    "expected_missing_info": [
+      "Pension Payment Order (PPO) Number or Beneficiary Aadhaar ID"
+    ],
+    "initial_assumed_authority": "Social Welfare Department"
+  },
+  {
+    "id": "GRV-003",
+    "title": "Hazardous High Tension Cable & Road Widening Dispute",
+    "complaint": "An overhead high-tension electric cable is hanging dangerously low (under 8 feet) across our colony road following storm winds. The Electricity Board states that road widening by the Municipal Corporation raised the road level without statutory clearances, whereas the Municipality asserts the power pole alignment was installed illegally without road right-of-way permission. Meanwhile school buses cannot pass and sparks were seen yesterday.",
+    "citizen_name": "Anand Mohan",
+    "location": "Crossroad 4, Gandhi Colony",
+    "category": "electricity_infrastructure",
+    "expected_authorities": ["State Electricity Board", "Municipal Corporation", "Traffic Police"],
+    "expected_claims": [
+      "Hazardous low-hanging HT electrical line posing imminent danger",
+      "Electricity Board alleges unauthorized road height increase by Municipality",
+      "Municipality alleges illegal power pole alignment without right-of-way"
+    ],
+    "expected_conflicts": [
+      "Statutory clearance and right-of-way compliance between Electricity Board and Municipality"
+    ],
+    "expected_missing_info": [
+      "Colony pole number and feeder transformer identifier"
+    ],
+    "initial_assumed_authority": "State Electricity Board"
+  },
+  {
+    "id": "GRV-004",
+    "title": "Commercial Demolition Damage and Compensation Demand",
+    "complaint": "During an anti-encroachment drive conducted by the Town Planning enforcement squad, the heavy JCB equipment accidentally demolished a registered commercial godown shed belonging to my firm, destroying stored goods worth 12 Lakh Rupees. The revenue surveyor admitted on-site that our plot was outside the demarcation line. I demand immediate compensation and suspension of further demolition until formal joint survey.",
+    "citizen_name": "Sunil Bansal",
+    "location": "Plot 88, Transport Nagar Bypass",
+    "category": "infrastructure_compensation",
+    "expected_authorities": ["Town Planning Authority", "Revenue Department", "District Magistrate Office"],
+    "expected_claims": [
+      "Accidental demolition of private property outside encroachment zone",
+      "Financial loss and inventory destruction worth Rs 12,00,000",
+      "Demand for financial compensation and stay on demolition"
+    ],
+    "expected_conflicts": [
+      "Encroachment demarcation vs registered private title deed boundary"
+    ],
+    "expected_missing_info": [
+      "Registered property deed and commercial inventory loss audit report"
+    ],
+    "initial_assumed_authority": "Town Planning Authority"
+  },
+  {
+    "id": "GRV-005",
+    "title": "Non-Functional Streetlight Near Women's Hostel",
+    "complaint": "The pole-mounted LED streetlight outside the working women's hostel has been non-functional for 3 weeks, leaving the alley completely dark and unsafe at night.",
+    "citizen_name": "Pooja Hegde",
+    "location": "Lane 3, Model Town",
+    "category": "municipal_maintenance",
+    "expected_authorities": ["Municipal Corporation Electrical Wing"],
+    "expected_claims": [
+      "Streetlight LED fixture broken for 3 weeks"
+    ],
+    "expected_conflicts": [],
+    "expected_missing_info": [],
+    "initial_assumed_authority": "Municipal Corporation Electrical Wing"
+  }
+]

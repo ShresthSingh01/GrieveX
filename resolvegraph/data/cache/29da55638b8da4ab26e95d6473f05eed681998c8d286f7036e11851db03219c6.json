@@ -1,0 +1,70 @@
+{
+  "goal": "Hazardous High Tension Cable & Road Widening Dispute",
+  "claims": [
+    {
+      "id": "CLM-1",
+      "text": "Hazardous low-hanging HT electrical line posing imminent danger",
+      "category": "factual_claim",
+      "confidence": 0.98
+    },
+    {
+      "id": "CLM-2",
+      "text": "Electricity Board alleges unauthorized road height increase by Municipality",
+      "category": "factual_claim",
+      "confidence": 0.98
+    },
+    {
+      "id": "CLM-3",
+      "text": "Municipality alleges illegal power pole alignment without right-of-way",
+      "category": "factual_claim",
+      "confidence": 0.98
+    }
+  ],
+  "authorities": [
+    {
+      "id": "AUTH-1",
+      "name": "State Electricity Board",
+      "role": "Nodal Jurisdiction for State Electricity Board",
+      "department": "State Electricity Board",
+      "confidence": 0.95
+    },
+    {
+      "id": "AUTH-2",
+      "name": "Municipal Corporation",
+      "role": "Nodal Jurisdiction for Municipal Corporation",
+      "department": "Municipal Corporation",
+      "confidence": 0.95
+    },
+    {
+      "id": "AUTH-3",
+      "name": "Traffic Police",
+      "role": "Nodal Jurisdiction for Traffic Police",
+      "department": "Traffic Police",
+      "confidence": 0.95
+    }
+  ],
+  "conflicts": [
+    {
+      "id": "CONF-1",
+      "claim_text": "Statutory clearance and right-of-way compliance between Electricity Board and Municipality",
+      "party_a": "State Electricity Board",
+      "party_b": "Municipal Corporation",
+      "description": "Jurisdiction dispute: Statutory clearance and right-of-way compliance between Electricity Board and Municipality",
+      "status": "UNRESOLVED"
+    }
+  ],
+  "missing_information": [
+    {
+      "id": "MISS-1",
+      "field_name": "Colony pole number and feeder transformer identifier",
+      "description": "Required resolution information: Colony pole number and feeder transformer identifier",
+      "importance": "BLOCKING",
+      "action_required": "Request Colony pole number and feeder transformer identifier from citizen / revenue records"
+    }
+  ],
+  "suggested_workflows": [
+    "infrastructure_damage"
+  ],
+  "confidence": 0.99,
+  "extractor_mode": "seed_ground_truth"
+}

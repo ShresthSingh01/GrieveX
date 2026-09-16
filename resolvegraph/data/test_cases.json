@@ -1,0 +1,71 @@
+[
+  {
+    "test_id": "TEST-01-SIMPLE",
+    "description": "Single-authority simple grievance with linear workflow",
+    "input_grievance_id": "GRV-005",
+    "expected_authorities": ["Municipal Corporation Electrical Wing"],
+    "min_expected_tasks": 3,
+    "has_conflicts": false,
+    "has_missing_info": false,
+    "high_risk_tasks_count": 0,
+    "expected_closure_allowed_at_start": false
+  },
+  {
+    "test_id": "TEST-02-MULTI-DEPT",
+    "description": "Multi-department drainage dispute with parallel task readiness",
+    "input_grievance_id": "GRV-001",
+    "expected_authorities": ["Municipality", "PWD", "Revenue"],
+    "min_expected_tasks": 5,
+    "has_conflicts": true,
+    "has_missing_info": true,
+    "initial_parallel_ready_tasks": 2,
+    "high_risk_tasks_count": 2
+  },
+  {
+    "test_id": "TEST-03-MISSING-INFO",
+    "description": "Pension blocked due to missing PPO / transaction identification",
+    "input_grievance_id": "GRV-002",
+    "expected_authorities": ["Social Welfare Department", "Public Sector Bank"],
+    "min_expected_tasks": 5,
+    "has_missing_info": true,
+    "expected_missing_field": "Pension Payment Order (PPO) Number or Beneficiary Aadhaar ID",
+    "must_block_case": true
+  },
+  {
+    "test_id": "TEST-04-CONFLICT",
+    "description": "Contradictory evidence between Electricity Board and Municipality",
+    "input_grievance_id": "GRV-003",
+    "expected_authorities": ["State Electricity Board", "Municipal Corporation"],
+    "has_conflicts": true,
+    "expected_conflict_claim": "Drain jurisdiction"
+  },
+  {
+    "test_id": "TEST-05-REPLANNING",
+    "description": "Dynamic replanning triggered by new jurisdiction evidence",
+    "input_grievance_id": "GRV-001",
+    "injected_evidence": {
+      "type": "OFFICIAL_SURVEY_REPORT",
+      "content": "PWD State Highway Division Executive Engineer confirms by gazette survey that arterial storm drain asset chainage 12+400 belongs to PWD Trunk Infrastructure.",
+      "submitted_by": "PWD Roads & Bridges Division"
+    },
+    "expected_invalidated_authority": "Municipality",
+    "expected_new_authority": "PWD",
+    "plan_must_change": true,
+    "audit_event_expected": "DYNAMIC_REPLANNING_EXECUTED"
+  },
+  {
+    "test_id": "TEST-06-HIGH-RISK-GATE",
+    "description": "Human approval gate blocking autonomous execution of financial compensation",
+    "input_grievance_id": "GRV-004",
+    "task_trigger": "financial_compensation_approval",
+    "expected_status_before_approval": "HUMAN_APPROVAL_REQUIRED",
+    "allowed_to_autonomously_complete": false
+  },
+  {
+    "test_id": "TEST-07-PREMATURE-CLOSURE",
+    "description": "Prevent closure when citizen outcome evidence is missing",
+    "input_grievance_id": "GRV-001",
+    "expected_closure_recommendation": "DO_NOT_CLOSE",
+    "reason": "Citizen outcome not verified by independent inspection"
+  }
+]

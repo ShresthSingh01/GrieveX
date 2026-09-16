@@ -1,0 +1,66 @@
+[
+  {
+    "id": "AUTH-MUN",
+    "name": "Municipality",
+    "full_name": "Municipal Corporation / Urban Local Body",
+    "jurisdiction": "Local streets, colony drains, internal sanitation, solid waste",
+    "nodal_officer": "Executive Engineer (Drainage)",
+    "contact_email": "drainage.municipality@citygov.in"
+  },
+  {
+    "id": "AUTH-PWD",
+    "name": "PWD",
+    "full_name": "Public Works Department",
+    "jurisdiction": "State highways, major arterial roads, trunk storm-water drains",
+    "nodal_officer": "Superintending Engineer (Roads & Bridges)",
+    "contact_email": "roads.pwd@state.gov.in"
+  },
+  {
+    "id": "AUTH-REV",
+    "name": "Revenue",
+    "full_name": "Revenue & Land Demarcation Department",
+    "jurisdiction": "Cadastral land boundaries, right-of-way demarcation, ownership records",
+    "nodal_officer": "Tehsildar / Sub-Divisional Magistrate",
+    "contact_email": "revenue.sdm@district.gov.in"
+  },
+  {
+    "id": "AUTH-DMO",
+    "name": "District Magistrate Office",
+    "full_name": "Office of the District Collector & District Magistrate",
+    "jurisdiction": "Appellate authority, inter-departmental dispute arbitration, emergency sanctions",
+    "nodal_officer": "Additional District Magistrate (Development)",
+    "contact_email": "dm.complaints@district.gov.in"
+  },
+  {
+    "id": "AUTH-WEL",
+    "name": "Social Welfare Department",
+    "full_name": "Directorate of Social Security and Empowerment of Persons with Disabilities",
+    "jurisdiction": "Disability pension, old age welfare, widow schemes, scholarship disbursements",
+    "nodal_officer": "District Social Security Officer",
+    "contact_email": "welfare.pension@state.gov.in"
+  },
+  {
+    "id": "AUTH-BNK",
+    "name": "Public Sector Bank",
+    "full_name": "Lead District Bank / Core Banking Disbursement Portal",
+    "jurisdiction": "DBT credit, PFMS clearing, NEFT/RTGS transaction settlement",
+    "nodal_officer": "Lead District Manager",
+    "contact_email": "leadbank@sbi.co.in"
+  },
+  {
+    "id": "AUTH-EB",
+    "name": "State Electricity Board",
+    "full_name": "Power Distribution Corporation Ltd (DISCOM)",
+    "jurisdiction": "HT/LT transmission cables, distribution transformers, electric poles",
+    "nodal_officer": "Assistant Executive Engineer (Power Distribution)",
+    "contact_email": "discom.faults@powertel.gov.in"
+  },
+  {
+    "id": "AUTH-AUD",
+    "name": "Independent Quality Audit Wing",
+    "full_name": "Third-Party Grievance Verification & Quality Control Cell",
+    "jurisdiction": "Independent field verification, citizen satisfaction validation, post-repair audits",
+    "nodal_officer": "Chief Quality Vigilance Auditor",
+    "contact_email": "audit.grievance@state.gov.in"
+  }
+]

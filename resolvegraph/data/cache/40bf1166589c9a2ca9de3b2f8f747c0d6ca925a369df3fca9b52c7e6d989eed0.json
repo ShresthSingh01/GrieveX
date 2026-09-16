@@ -1,0 +1,27 @@
+{
+  "goal": "Non-Functional Streetlight Near Women's Hostel",
+  "claims": [
+    {
+      "id": "CLM-1",
+      "text": "Streetlight LED fixture broken for 3 weeks",
+      "category": "factual_claim",
+      "confidence": 0.98
+    }
+  ],
+  "authorities": [
+    {
+      "id": "AUTH-1",
+      "name": "Municipal Corporation Electrical Wing",
+      "role": "Nodal Jurisdiction for Municipal Corporation Electrical Wing",
+      "department": "Municipal Corporation Electrical Wing",
+      "confidence": 0.95
+    }
+  ],
+  "conflicts": [],
+  "missing_information": [],
+  "suggested_workflows": [
+    "municipal_maintenance"
+  ],
+  "confidence": 0.99,
+  "extractor_mode": "seed_ground_truth"
+}

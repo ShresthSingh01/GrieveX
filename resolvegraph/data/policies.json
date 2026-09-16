@@ -1,0 +1,62 @@
+{
+  "risk_rules": [
+    {
+      "rule_id": "RULE-FIN-01",
+      "category": "financial_disbursement",
+      "keywords": ["compensation", "damages", "sanction", "arrears", "disbursement", "release funds"],
+      "risk_level": "HIGH",
+      "requires_human_approval": true,
+      "authority_required": "District Magistrate Office / Gazetted Officer",
+      "description": "Any task involving financial compensation, fund releases, or fiscal liability requires explicit human officer approval."
+    },
+    {
+      "rule_id": "RULE-JUR-02",
+      "category": "jurisdiction_determination",
+      "keywords": ["determine responsibility", "jurisdiction order", "demarcation order", "right-of-way", "ownership"],
+      "risk_level": "HIGH",
+      "requires_human_approval": true,
+      "authority_required": "Joint Revenue Committee / Competent Magistrate",
+      "description": "Binding legal determination of inter-departmental jurisdiction cannot be executed autonomously."
+    },
+    {
+      "rule_id": "RULE-CLS-03",
+      "category": "disputed_closure",
+      "keywords": ["closure", "final verification", "resolution verification", "reject claim", "demolition stay"],
+      "risk_level": "HIGH",
+      "requires_human_approval": true,
+      "authority_required": "Grievance Redressal Officer",
+      "description": "Closure verification and claim dismissal require human oversight with verified documentary evidence."
+    },
+    {
+      "rule_id": "RULE-OPS-04",
+      "category": "cross_department_assignment",
+      "keywords": ["reconstruction", "repair", "desilting", "joint inspection", "cross-department", "assign"],
+      "risk_level": "MEDIUM",
+      "requires_human_approval": false,
+      "authority_required": "Designated Departmental Nodal Officer",
+      "description": "Operational coordination and cross-departmental task assignment proceed with automated scheduling."
+    },
+    {
+      "rule_id": "RULE-INF-05",
+      "category": "information_collection",
+      "keywords": ["verify", "inspect", "check", "reconcile", "request info", "site inspection"],
+      "risk_level": "LOW",
+      "requires_human_approval": false,
+      "authority_required": "Automated Orchestrator / Field Inspector",
+      "description": "Fact-gathering, evidence requests, and status queries can execute autonomously without human gating."
+    }
+  ],
+  "closure_criteria": {
+    "require_all_tasks_completed": true,
+    "require_no_unresolved_conflicts": true,
+    "require_no_pending_human_approvals": true,
+    "require_citizen_outcome_evidence": true,
+    "evidence_types_acceptable": [
+      "Citizen Satisfaction Statement",
+      "On-site Flow Audit Verification",
+      "Before-After Site Comparison",
+      "Core Banking UTR Number",
+      "Citizen Credit Confirmation Receipt"
+    ]
+  }
+}

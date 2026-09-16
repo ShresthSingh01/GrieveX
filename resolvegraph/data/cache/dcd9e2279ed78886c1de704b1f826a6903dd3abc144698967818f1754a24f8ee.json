@@ -1,0 +1,27 @@
+{
+  "goal": "Resolve localized civic infrastructure defect",
+  "claims": [
+    {
+      "id": "CLM-1",
+      "text": "Streetlight broken",
+      "category": "factual_claim",
+      "confidence": 0.92
+    }
+  ],
+  "authorities": [
+    {
+      "id": "AUTH-1",
+      "name": "Municipal Administration",
+      "role": "Primary Civic Operations",
+      "department": "Urban Local Body",
+      "confidence": 0.85
+    }
+  ],
+  "conflicts": [],
+  "missing_information": [],
+  "suggested_workflows": [
+    "municipal_maintenance"
+  ],
+  "confidence": 0.91,
+  "extractor_mode": "deterministic_rule_engine"
+}

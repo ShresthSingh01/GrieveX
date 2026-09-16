@@ -1,0 +1,76 @@
+{
+  "goal": "Severe Residential Flooding & Blocked Main Arterial Drain",
+  "claims": [
+    {
+      "id": "CLM-1",
+      "text": "Residential flooding caused by blocked arterial drain",
+      "category": "factual_claim",
+      "confidence": 0.98
+    },
+    {
+      "id": "CLM-2",
+      "text": "Municipality claims drain belongs to PWD",
+      "category": "factual_claim",
+      "confidence": 0.98
+    },
+    {
+      "id": "CLM-3",
+      "text": "PWD unresponsive to grievance",
+      "category": "factual_claim",
+      "confidence": 0.98
+    },
+    {
+      "id": "CLM-4",
+      "text": "Property boundary wall experiencing structural damage",
+      "category": "factual_claim",
+      "confidence": 0.98
+    }
+  ],
+  "authorities": [
+    {
+      "id": "AUTH-1",
+      "name": "Municipality",
+      "role": "Nodal Jurisdiction for Municipality",
+      "department": "Municipality",
+      "confidence": 0.95
+    },
+    {
+      "id": "AUTH-2",
+      "name": "PWD",
+      "role": "Nodal Jurisdiction for PWD",
+      "department": "PWD",
+      "confidence": 0.95
+    },
+    {
+      "id": "AUTH-3",
+      "name": "Revenue",
+      "role": "Nodal Jurisdiction for Revenue",
+      "department": "Revenue",
+      "confidence": 0.95
+    }
+  ],
+  "conflicts": [
+    {
+      "id": "CONF-1",
+      "claim_text": "Drain jurisdiction and maintenance responsibility between Municipality and PWD",
+      "party_a": "Municipality",
+      "party_b": "PWD",
+      "description": "Jurisdiction dispute: Drain jurisdiction and maintenance responsibility between Municipality and PWD",
+      "status": "UNRESOLVED"
+    }
+  ],
+  "missing_information": [
+    {
+      "id": "MISS-1",
+      "field_name": "Exact municipal revenue ward cadastral drain asset identifier",
+      "description": "Required resolution information: Exact municipal revenue ward cadastral drain asset identifier",
+      "importance": "BLOCKING",
+      "action_required": "Request Exact municipal revenue ward cadastral drain asset identifier from citizen / revenue records"
+    }
+  ],
+  "suggested_workflows": [
+    "jurisdiction_dispute"
+  ],
+  "confidence": 0.99,
+  "extractor_mode": "seed_ground_truth"
+}

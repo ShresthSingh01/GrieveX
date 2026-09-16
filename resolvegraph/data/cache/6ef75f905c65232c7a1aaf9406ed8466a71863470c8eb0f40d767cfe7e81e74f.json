@@ -1,0 +1,57 @@
+{
+  "goal": "Discontinued Senior Citizen Disability Pension",
+  "claims": [
+    {
+      "id": "CLM-1",
+      "text": "Disability pension not credited for 4 consecutive months",
+      "category": "factual_claim",
+      "confidence": 0.98
+    },
+    {
+      "id": "CLM-2",
+      "text": "Contradictory explanations between bank branch and social security office",
+      "category": "factual_claim",
+      "confidence": 0.98
+    }
+  ],
+  "authorities": [
+    {
+      "id": "AUTH-1",
+      "name": "Social Welfare Department",
+      "role": "Nodal Jurisdiction for Social Welfare Department",
+      "department": "Social Welfare Department",
+      "confidence": 0.95
+    },
+    {
+      "id": "AUTH-2",
+      "name": "Public Sector Bank",
+      "role": "Nodal Jurisdiction for Public Sector Bank",
+      "department": "Public Sector Bank",
+      "confidence": 0.95
+    }
+  ],
+  "conflicts": [
+    {
+      "id": "CONF-1",
+      "claim_text": "Disbursement status discrepancy between Welfare Treasury and Disbursement Bank",
+      "party_a": "Social Welfare Department",
+      "party_b": "Public Sector Bank",
+      "description": "Jurisdiction dispute: Disbursement status discrepancy between Welfare Treasury and Disbursement Bank",
+      "status": "UNRESOLVED"
+    }
+  ],
+  "missing_information": [
+    {
+      "id": "MISS-1",
+      "field_name": "Pension Payment Order (PPO) Number or Beneficiary Aadhaar ID",
+      "description": "Required resolution information: Pension Payment Order (PPO) Number or Beneficiary Aadhaar ID",
+      "importance": "BLOCKING",
+      "action_required": "Request Pension Payment Order (PPO) Number or Beneficiary Aadhaar ID from citizen / revenue records"
+    }
+  ],
+  "suggested_workflows": [
+    "welfare_pension"
+  ],
+  "confidence": 0.99,
+  "extractor_mode": "seed_ground_truth"
+}

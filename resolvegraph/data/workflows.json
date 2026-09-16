@@ -1,0 +1,170 @@
+{
+  "jurisdiction_dispute": {
+    "name": "Inter-Departmental Jurisdiction & Boundary Resolution",
+    "description": "Workflow for resolving disputed asset ownership and boundary demarcations between public bodies",
+    "tasks": [
+      {
+        "key": "verify_cadastral_jurisdiction",
+        "title": "Verify Cadastral Jurisdiction and Asset Ownership",
+        "authority": "Revenue",
+        "risk_level": "LOW",
+        "dependencies": [],
+        "required_evidence": ["Revenue Cadastral Map", "Official Demarcation Record"]
+      },
+      {
+        "key": "preliminary_site_inspection",
+        "title": "Conduct On-Site Engineering Inspection",
+        "authority": "{assumed_authority}",
+        "risk_level": "LOW",
+        "dependencies": [],
+        "required_evidence": ["Site Inspection Photos", "Obstruction Assessment Report"]
+      },
+      {
+        "key": "determine_responsible_authority",
+        "title": "Joint Determination of Responsible Authority",
+        "authority": "District Magistrate Office",
+        "risk_level": "HIGH",
+        "dependencies": ["verify_cadastral_jurisdiction", "preliminary_site_inspection"],
+        "required_evidence": ["Joint Jurisdiction Order", "Handover Minutes"]
+      },
+      {
+        "key": "execute_physical_resolution",
+        "title": "Execute Physical Desilting & Repair Work",
+        "authority": "{determined_authority}",
+        "risk_level": "MEDIUM",
+        "dependencies": ["determine_responsible_authority"],
+        "required_evidence": ["Work Completion Certificate", "Post-Repair High-Res Photos", "Material Invoices"]
+      },
+      {
+        "key": "citizen_outcome_verification",
+        "title": "Field Verification of Actual Grievance Resolution",
+        "authority": "Independent Quality Audit Wing",
+        "risk_level": "HIGH",
+        "dependencies": ["execute_physical_resolution"],
+        "required_evidence": ["Citizen Satisfaction Statement", "On-site Flow Audit Verification"]
+      }
+    ]
+  },
+  "infrastructure_damage": {
+    "name": "Public Infrastructure Damage & Remediation",
+    "description": "Emergency containment, technical assessment, administrative approval, and execution",
+    "tasks": [
+      {
+        "key": "emergency_site_hazard_assessment",
+        "title": "Emergency Site Hazard & Public Safety Inspection",
+        "authority": "{assumed_authority}",
+        "risk_level": "LOW",
+        "dependencies": [],
+        "required_evidence": ["Safety Hazard Memo", "Site Cordoning Geo-tagged Photos"]
+      },
+      {
+        "key": "structural_damage_estimation",
+        "title": "Civil Structural Damage Assessment & Bill of Quantities",
+        "authority": "PWD",
+        "risk_level": "MEDIUM",
+        "dependencies": ["emergency_site_hazard_assessment"],
+        "required_evidence": ["Cost Estimate Report", "Structural Engineer Signoff"]
+      },
+      {
+        "key": "financial_compensation_approval",
+        "title": "Consequential Damage Compensation & Tender Approval",
+        "authority": "District Magistrate Office",
+        "risk_level": "HIGH",
+        "dependencies": ["structural_damage_estimation"],
+        "required_evidence": ["Executive Sanction Order", "Financial Audit Clearance"]
+      },
+      {
+        "key": "civil_reconstruction_repair",
+        "title": "Civil Reconstruction and Safety Restoration",
+        "authority": "PWD",
+        "risk_level": "MEDIUM",
+        "dependencies": ["financial_compensation_approval"],
+        "required_evidence": ["Engineer Quality Certificate", "Before-After Site Comparison"]
+      },
+      {
+        "key": "final_closure_verification",
+        "title": "Physical Verification & Closure Recommendation",
+        "authority": "Public Grievance Redressal Cell",
+        "risk_level": "HIGH",
+        "dependencies": ["civil_reconstruction_repair"],
+        "required_evidence": ["Joint Inspection Verification Form", "Beneficiary Acknowledgment"]
+      }
+    ]
+  },
+  "welfare_pension": {
+    "name": "Social Welfare Beneficiary Audit & Disbursement Rectification",
+    "description": "Disbursement pipeline verification, beneficiary validation, treasury sanction, and payment verification",
+    "tasks": [
+      {
+        "key": "verify_beneficiary_eligibility",
+        "title": "Verify Beneficiary ID, PPO Record and Eligibility Status",
+        "authority": "Social Welfare Department",
+        "risk_level": "LOW",
+        "dependencies": [],
+        "required_evidence": ["PPO Database Excerpt", "Aadhaar eKYC Verification"]
+      },
+      {
+        "key": "reconcile_bank_disbursement",
+        "title": "Reconcile Public Sector Bank Treasury Clearance",
+        "authority": "Public Sector Bank",
+        "risk_level": "LOW",
+        "dependencies": [],
+        "required_evidence": ["PFMS / Core Banking Transaction Statement"]
+      },
+      {
+        "key": "identify_transmission_defect",
+        "title": "Root Cause Determination of Payment Failure",
+        "authority": "Social Welfare Department",
+        "risk_level": "MEDIUM",
+        "dependencies": ["verify_beneficiary_eligibility", "reconcile_bank_disbursement"],
+        "required_evidence": ["Technical Exception Log", "Treasury Rejection Code Analysis"]
+      },
+      {
+        "key": "authorize_arrears_payment",
+        "title": "Authorize Special Arrears Payment Release",
+        "authority": "District Social Welfare Officer",
+        "risk_level": "HIGH",
+        "dependencies": ["identify_transmission_defect"],
+        "required_evidence": ["Competent Authority Financial Sanction", "Treasury Token Number"]
+      },
+      {
+        "key": "verify_bank_credit",
+        "title": "Verify Successful Account Credit & Citizen Confirmation",
+        "authority": "Public Grievance Redressal Cell",
+        "risk_level": "HIGH",
+        "dependencies": ["authorize_arrears_payment"],
+        "required_evidence": ["Core Banking UTR Number", "Citizen Credit Confirmation Receipt"]
+      }
+    ]
+  },
+  "municipal_maintenance": {
+    "name": "Municipal Utility Rapid Repair",
+    "description": "Rapid response for localized municipal utility outages and defects",
+    "tasks": [
+      {
+        "key": "asset_fault_verification",
+        "title": "Asset Verification & Defect Diagnosis",
+        "authority": "Municipal Corporation Electrical Wing",
+        "risk_level": "LOW",
+        "dependencies": [],
+        "required_evidence": ["Defect Diagnostic Sheet", "Asset Pole GPS Tag"]
+      },
+      {
+        "key": "utility_component_replacement",
+        "title": "Component Replacement & Field Repair",
+        "authority": "Municipal Corporation Electrical Wing",
+        "risk_level": "LOW",
+        "dependencies": ["asset_fault_verification"],
+        "required_evidence": ["Stock Requisition Voucher", "Illumination Test Photo"]
+      },
+      {
+        "key": "closure_outcome_verification",
+        "title": "Night-time Operational Inspection & Closure",
+        "authority": "Ward Resident Welfare Representative",
+        "risk_level": "LOW",
+        "dependencies": ["utility_component_replacement"],
+        "required_evidence": ["Ward Inspection Log", "Resident Acknowledgment"]
+      }
+    ]
+  }
+}

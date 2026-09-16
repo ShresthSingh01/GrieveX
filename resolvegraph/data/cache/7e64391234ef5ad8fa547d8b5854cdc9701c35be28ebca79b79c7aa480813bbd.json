@@ -1,0 +1,63 @@
+{
+  "goal": "Resolve recurring drainage backflow, drain blockage, and prevent property damage",
+  "claims": [
+    {
+      "id": "CLM-1",
+      "text": "House flooded because of drain",
+      "category": "factual_claim",
+      "confidence": 0.92
+    },
+    {
+      "id": "CLM-2",
+      "text": "Municipality says it belongs to PWD",
+      "category": "factual_claim",
+      "confidence": 0.92
+    },
+    {
+      "id": "CLM-3",
+      "text": "PWD has not responded",
+      "category": "factual_claim",
+      "confidence": 0.92
+    }
+  ],
+  "authorities": [
+    {
+      "id": "AUTH-1",
+      "name": "Municipality",
+      "role": "Ward Operations & Sanitation",
+      "department": "Municipal Administration",
+      "confidence": 0.95
+    },
+    {
+      "id": "AUTH-2",
+      "name": "PWD",
+      "role": "Roads & Storm Drain Assets",
+      "department": "State Public Works",
+      "confidence": 0.95
+    }
+  ],
+  "conflicts": [
+    {
+      "id": "CONF-1",
+      "claim_text": "Inter-departmental responsibility & asset jurisdiction dispute",
+      "party_a": "Municipality",
+      "party_b": "PWD",
+      "description": "Contradictory jurisdiction or blame-shifting detected between Municipality and PWD.",
+      "status": "UNRESOLVED"
+    }
+  ],
+  "missing_information": [
+    {
+      "id": "MISS-2",
+      "field_name": "Exact Cadastral / Asset Geo-Location Identifier",
+      "description": "Specific engineering asset ID or survey chainage required for jurisdiction determination.",
+      "importance": "BLOCKING",
+      "action_required": "Obtain revenue survey number or municipal ward asset tag"
+    }
+  ],
+  "suggested_workflows": [
+    "jurisdiction_dispute"
+  ],
+  "confidence": 0.91,
+  "extractor_mode": "deterministic_rule_engine"
+}
