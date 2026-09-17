@@ -250,7 +250,32 @@ export default function DashboardPage() {
             <AuditTimeline events={currentCase.audit_events || []} />
           </footer>
         </motion.div>
-      ) : null}
+      ) : (
+        <div className="flex flex-col items-center justify-center flex-1 min-h-[60vh] gap-4 text-center px-6">
+          <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400">
+            <StackSimple size={24} />
+          </div>
+          <h2 className="text-base font-semibold text-zinc-200">No Grievance Loaded</h2>
+          <p className="text-xs text-zinc-400 max-w-md">
+            The resolution graph engine could not find active cases in the database or the backend is synchronizing. Initialize standard demo cases or register a new citizen grievance to launch the orchestrator.
+          </p>
+          <div className="flex items-center gap-3 mt-2">
+            <button
+              onClick={handleResetSeed}
+              className="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-medium text-white transition-colors flex items-center gap-2 shadow-subtle"
+            >
+              <ArrowCounterClockwise size={14} />
+              <span>Initialize Demo Cases</span>
+            </button>
+            <button
+              onClick={() => setSubmitModalOpen(true)}
+              className="px-3.5 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs font-medium text-zinc-200 border border-zinc-700 transition-colors shadow-subtle"
+            >
+              Submit New Grievance
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Modals */}
       {evidenceModalOpen && (

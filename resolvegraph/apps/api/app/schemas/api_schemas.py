@@ -90,13 +90,15 @@ class ProvideMissingInfoRequest(BaseModel):
 
 class AuditEventItem(BaseModel):
     id: int
-    case_id: str
+    case_id: Optional[str] = None
     event_type: str
     description: str
     reason: Optional[str] = None
     actor: str
     metadata: Dict[str, Any] = {}
-    created_at: datetime.datetime
+    created_at: Optional[Any] = None
+
+    model_config = {"extra": "ignore"}
 
 class CaseDetailResponse(BaseModel):
     id: str
@@ -113,20 +115,29 @@ class CaseDetailResponse(BaseModel):
     authorities: List[AuthorityItem] = []
     conflicts: List[ConflictItem] = []
     missing_info: List[MissingInfoItem] = []
+    assumptions: List[Dict[str, Any]] = []
     tasks: List[TaskItem] = []
     audit_events: List[AuditEventItem] = []
     ready_tasks_count: int = 0
-    created_at: datetime.datetime
-    updated_at: datetime.datetime
+    total_tasks_count: int = 0
+    active_plan_version: Optional[int] = 1
+    resolution_debt_score: Optional[int] = 0
+    can_close: Optional[bool] = False
+    created_at: Optional[Any] = None
+    updated_at: Optional[Any] = None
+
+    model_config = {"extra": "ignore"}
 
 class GraphResponse(BaseModel):
     case_id: str
     workflow_name: str
-    nodes: List[Dict[str, Any]]
-    edges: List[Dict[str, Any]]
-    active_tasks_count: int
-    ready_tasks_count: int
+    nodes: List[Dict[str, Any]] = []
+    edges: List[Dict[str, Any]] = []
+    active_tasks_count: int = 0
+    ready_tasks_count: int = 0
     parallel_execution_enabled: bool = True
+
+    model_config = {"extra": "ignore"}
 
 class VerificationChecklistResponse(BaseModel):
     case_id: str

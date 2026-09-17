@@ -259,6 +259,7 @@ class CaseService:
             "audit_events": [
                 {
                     "id": ev.id,
+                    "case_id": ev.case_id,
                     "event_type": ev.event_type,
                     "description": ev.description,
                     "reason": ev.reason,
@@ -713,6 +714,9 @@ class CaseService:
         nodes = []
         edges = []
 
+        ready_count = len([t for t in task_dicts if t["status"] == "READY"])
+        active_count = len([t for t in task_dicts if t["status"] in ["READY", "IN_PROGRESS", "HUMAN_APPROVAL_REQUIRED"]])
+
         for i, t in enumerate(task_dicts):
             nodes.append({
                 "id": t["id"],
@@ -727,7 +731,8 @@ class CaseService:
                 "position": {"x": 100 + (i % 3) * 280, "y": 80 + (i // 3) * 160}
             })
 
-            for dep_id in t.get("dependencies", []):
+            for dep in t.get("dependencies", []):
+                dep_id = dep if dep.startswith(case_id) else f"{case_id}-{dep}"
                 edges.append({
                     "id": f"e-{dep_id}-{t['id']}",
                     "source": dep_id,
@@ -735,7 +740,15 @@ class CaseService:
                     "animated": t["status"] in ["READY", "IN_PROGRESS"]
                 })
 
-        return {"nodes": nodes, "edges": edges}
+        return {
+            "case_id": case_id,
+            "workflow_name": case.workflow_name or "Resolution Plan",
+            "nodes": nodes,
+            "edges": edges,
+            "active_tasks_count": active_count,
+            "ready_tasks_count": ready_count,
+            "parallel_execution_enabled": True
+        }
 
     def _task_model_to_dict(self, t: TaskModel) -> Dict[str, Any]:
         return {
