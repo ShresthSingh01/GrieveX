@@ -33,39 +33,45 @@ export const TaskNode = memo(({ data }: TaskNodeProps) => {
   const isHumanApproval = data.status === 'HUMAN_APPROVAL_REQUIRED';
   const isBlocked = data.status === 'BLOCKED' || data.status === 'PENDING';
 
+  const nodeTitle = data.title || (data as any).label || 'Resolution Task';
+  const nodeId = data.id || (data as any).key || 'TASK';
+  const nodeAuthority = data.authority || 'Public Authority';
+  const nodeStatus = data.status || 'PENDING';
+  const nodeRisk = data.risk_level || 'LOW';
+
   // Base card and status styles
-  let cardClass = 'bg-bg-surface border-zinc-800 text-zinc-200';
-  let badgeClass = 'bg-bg-elevated text-zinc-400 border-zinc-700/60';
-  let statusIcon = <Clock size={13} className="text-zinc-500 shrink-0" />;
+  let cardClass = 'bg-zinc-900/95 border-zinc-700/80 text-zinc-100 shadow-card';
+  let badgeClass = 'bg-zinc-800 text-zinc-300 border-zinc-700/60';
+  let statusIcon = <Clock size={13} className="text-zinc-400 shrink-0" />;
 
   if (isInvalidated) {
-    cardClass = 'bg-zinc-900/50 border-rose-900/40 text-rose-300/60 opacity-60 line-through';
-    badgeClass = 'bg-rose-950/40 text-rose-400 border-rose-900/40';
+    cardClass = 'bg-zinc-900/80 border-rose-900/60 text-rose-300/80 opacity-75 line-through shadow-subtle';
+    badgeClass = 'bg-rose-950/60 text-rose-300 border-rose-800/60';
     statusIcon = <Prohibit size={13} className="text-rose-400 shrink-0" />;
   } else if (isCompleted) {
-    cardClass = 'bg-zinc-900 border-emerald-800/40 text-zinc-100 shadow-subtle';
-    badgeClass = 'bg-emerald-950/40 text-emerald-400 border-emerald-800/40';
+    cardClass = 'bg-zinc-900/95 border-emerald-500/50 text-zinc-100 shadow-subtle';
+    badgeClass = 'bg-emerald-950/60 text-emerald-300 border-emerald-700/50';
     statusIcon = <CheckCircle size={13} weight="fill" className="text-emerald-400 shrink-0" />;
   } else if (isHumanApproval) {
-    cardClass = 'bg-zinc-900 border-amber-600/50 text-amber-100 shadow-subtle';
-    badgeClass = 'bg-amber-950/40 text-amber-300 border-amber-700/50';
+    cardClass = 'bg-zinc-900/95 border-amber-500/60 text-amber-100 shadow-subtle';
+    badgeClass = 'bg-amber-950/60 text-amber-300 border-amber-600/60';
     statusIcon = <Warning size={13} weight="fill" className="text-amber-400 shrink-0" />;
   } else if (isReady) {
-    cardClass = 'bg-zinc-900 border-emerald-500/50 text-zinc-100 shadow-subtle';
-    badgeClass = 'bg-emerald-950/40 text-emerald-300 border-emerald-700/50';
+    cardClass = 'bg-zinc-900/95 border-emerald-400/60 text-zinc-100 shadow-subtle ring-1 ring-emerald-500/20';
+    badgeClass = 'bg-emerald-950/60 text-emerald-300 border-emerald-600/60';
     statusIcon = <ArrowUpRight size={13} weight="bold" className="text-emerald-400 shrink-0" />;
   } else if (isBlocked) {
-    cardClass = 'bg-bg-surface/80 border-zinc-800/80 text-zinc-400';
-    badgeClass = 'bg-bg-elevated text-zinc-500 border-zinc-800';
+    cardClass = 'bg-zinc-900/85 border-zinc-800 text-zinc-300 shadow-subtle';
+    badgeClass = 'bg-zinc-800/80 text-zinc-400 border-zinc-700/60';
   }
 
   // Risk badge color
   const riskColor =
-    data.risk_level === 'HIGH'
-      ? 'text-rose-400 bg-rose-950/30 border-rose-900/40'
-      : data.risk_level === 'MEDIUM'
-      ? 'text-amber-400 bg-amber-950/30 border-amber-900/40'
-      : 'text-zinc-400 bg-zinc-800/40 border-zinc-700/60';
+    nodeRisk === 'HIGH'
+      ? 'text-rose-300 bg-rose-950/50 border-rose-800/60'
+      : nodeRisk === 'MEDIUM'
+      ? 'text-amber-300 bg-amber-950/50 border-amber-800/60'
+      : 'text-zinc-400 bg-zinc-800/60 border-zinc-700/60';
 
   const deptColor = data.authority_color || '#10b981';
 
@@ -74,49 +80,48 @@ export const TaskNode = memo(({ data }: TaskNodeProps) => {
       <Handle 
         type="target" 
         position={Position.Left} 
-        className="!bg-zinc-500 !w-2 !h-2 !border-bg-base" 
+        className="!bg-zinc-400 !w-2.5 !h-2.5 !border-zinc-900" 
       />
       
       {/* Top Header: ID, Authority with Department Dot & Replanned Tag */}
       <div className="flex items-center justify-between gap-1.5 mb-1.5">
         <div className="flex items-center gap-1.5">
-          <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-bg-elevated text-zinc-300 border border-zinc-700/60">
-            {data.id}
+          <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-200 border border-zinc-700/80">
+            {nodeId}
           </span>
-          <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-medium text-zinc-300 truncate max-w-[120px]">
-            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: deptColor }} />
-            <span>{data.authority}</span>
+          <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-semibold text-zinc-200 truncate max-w-[120px]">
+            <span className="w-2 h-2 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: deptColor }} />
+            <span>{nodeAuthority}</span>
           </span>
         </div>
         {data.is_replanned && (
-          <span className="text-[9px] font-mono font-medium px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30">
+          <span className="text-[9px] font-mono font-medium px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
             Replanned
           </span>
         )}
       </div>
 
-
       {/* Task Title */}
-      <div className="text-xs font-medium line-clamp-2 mb-2 leading-snug text-zinc-200">
-        {data.title}
+      <div className="text-xs font-semibold line-clamp-2 mb-2 leading-snug text-zinc-100">
+        {nodeTitle}
       </div>
 
       {/* Bottom Metadata Badges */}
       <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-zinc-800/80">
         <span className={`text-[10px] px-1.5 py-0.5 rounded border font-medium flex items-center gap-1 ${badgeClass}`}>
           {statusIcon}
-          <span>{data.status.replace(/_/g, ' ')}</span>
+          <span>{nodeStatus.replace(/_/g, ' ')}</span>
         </span>
 
-        <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${riskColor}`}>
-          {data.risk_level}
+        <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border font-semibold ${riskColor}`}>
+          {nodeRisk}
         </span>
       </div>
 
       <Handle 
         type="source" 
         position={Position.Right} 
-        className="!bg-emerald-500 !w-2 !h-2 !border-bg-base" 
+        className="!bg-emerald-400 !w-2.5 !h-2.5 !border-zinc-900" 
       />
     </div>
   );

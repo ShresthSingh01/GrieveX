@@ -27,7 +27,16 @@ export const ResolutionGraph: React.FC<ResolutionGraphProps> = ({
   workflowName = 'Dynamic Resolution Plan',
   onNodeClick,
 }) => {
-  const nodeTypes = useMemo(() => ({ taskNode: TaskNode }), []);
+  const nodeTypes = useMemo(() => ({ 
+    taskNode: TaskNode,
+    default: TaskNode 
+  }), []);
+
+  const defaultEdgeOptions = useMemo(() => ({
+    animated: true,
+    style: { stroke: '#10b981', strokeWidth: 2 },
+    type: 'smoothstep'
+  }), []);
 
   return (
     <div className="w-full h-full relative rounded-2xl overflow-hidden bg-bg-base border border-zinc-800 shadow-card">
@@ -45,6 +54,7 @@ export const ResolutionGraph: React.FC<ResolutionGraphProps> = ({
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        defaultEdgeOptions={defaultEdgeOptions}
         onNodeClick={onNodeClick}
         fitView
         fitViewOptions={{ padding: 0.25 }}

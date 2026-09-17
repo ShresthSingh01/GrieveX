@@ -717,27 +717,68 @@ class CaseService:
         ready_count = len([t for t in task_dicts if t["status"] == "READY"])
         active_count = len([t for t in task_dicts if t["status"] in ["READY", "IN_PROGRESS", "HUMAN_APPROVAL_REQUIRED"]])
 
+        dept_colors = {
+            "Municipality": "#38bdf8",     # sky blue
+            "PWD": "#fbbf24",              # amber
+            "Revenue": "#a855f7",          # purple
+            "District Magistrate Office": "#f43f5e", # rose
+            "Independent Quality Audit Wing": "#10b981", # emerald
+            "Social Welfare Department": "#34d399",
+            "Public Sector Bank": "#60a5fa",
+            "State Electricity Board": "#f97316",
+        }
+
+        # Compute topological rank/layer for each node so graph flows logically left-to-right
+        levels = {}
+        for t in task_dicts:
+            deps = t.get("dependencies", [])
+            if not deps:
+                levels[t["id"]] = 0
+            else:
+                max_parent = max([levels.get(d, 0) for d in deps], default=0)
+                levels[t["id"]] = max_parent + 1
+
+        level_rows = {}
         for i, t in enumerate(task_dicts):
+            lvl = levels.get(t["id"], i % 3)
+            row = level_rows.get(lvl, 0)
+            level_rows[lvl] = row + 1
+
+            x_pos = 50 + lvl * 320
+            y_pos = 60 + row * 160
+
             nodes.append({
                 "id": t["id"],
+                "type": "taskNode",
                 "data": {
-                    "label": t["title"],
+                    "id": t["key"],
+                    "title": t["title"],
                     "authority": t["authority"],
+                    "authority_color": dept_colors.get(t["authority"], "#10b981"),
                     "risk_level": t["risk_level"],
                     "status": t["status"],
-                    "requires_approval": t["requires_human_approval"],
+                    "requires_human_approval": t["requires_human_approval"],
+                    "required_evidence": t.get("required_evidence", []),
+                    "submitted_evidence": t.get("submitted_evidence", []),
+                    "is_replanned": t.get("is_replanned", False),
                     "invalidated": t.get("invalidated", False)
                 },
-                "position": {"x": 100 + (i % 3) * 280, "y": 80 + (i // 3) * 160}
+                "position": {"x": x_pos, "y": y_pos}
             })
 
             for dep in t.get("dependencies", []):
                 dep_id = dep if dep.startswith(case_id) else f"{case_id}-{dep}"
+                is_active = t["status"] in ["READY", "IN_PROGRESS"]
                 edges.append({
                     "id": f"e-{dep_id}-{t['id']}",
                     "source": dep_id,
                     "target": t["id"],
-                    "animated": t["status"] in ["READY", "IN_PROGRESS"]
+                    "type": "smoothstep",
+                    "animated": is_active,
+                    "style": {
+                        "stroke": "#10b981" if is_active else "#52525b",
+                        "strokeWidth": 2
+                    }
                 })
 
         return {
