@@ -22,4 +22,6 @@ def get_db():
         db.close()
 
 def init_db():
+    # Import models here so Base.metadata is fully populated with all tables and columns
+    from ..models import models  # noqa: F401
     Base.metadata.create_all(bind=engine)

@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from .core.database import init_db
+from .core.config import ALLOWED_ORIGINS, require_live_ai, APP_MODE, AI_MODE
 from .routes import grievances, demo
 
 app = FastAPI(
@@ -14,10 +15,11 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Enable CORS for Next.js web frontend
+# Enable CORS for Next.js web frontend (Explicit origins + Vercel preview domains)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -29,6 +31,7 @@ app.include_router(demo.router)
 
 @app.on_event("startup")
 def on_startup():
+    require_live_ai()
     init_db()
 
 @app.get("/")

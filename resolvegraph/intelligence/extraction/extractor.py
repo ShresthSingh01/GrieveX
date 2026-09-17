@@ -63,39 +63,51 @@ class GrievanceExtractor:
     def extract(self, complaint_text: str, force_offline: bool = False, case_id: Optional[str] = None) -> ExtractionResult:
         """
         Extract claims, authorities, conflicts, missing info from text.
-        Guarantees zero API exhaustion if force_offline=True or when API key is missing.
+        In production with AI_MODE=live, executes live AI and fails fast on errors.
+        In development/test, provides local caching and offline rule engine for 0 token cost.
         """
+        app_mode = os.getenv("APP_MODE", "development").strip().lower()
+        ai_mode = os.getenv("AI_MODE", "offline").strip().lower()
+
         cache_key = self._get_cache_key(complaint_text)
         cached = self._get_cached_result(cache_key)
         if cached:
             return cached
 
-        # Check if matches known seed case
-        if case_id and case_id in self.seed_cases:
-            seed = self.seed_cases[case_id]
-            result = self._build_from_seed(seed, complaint_text)
-            self._save_cached_result(cache_key, result)
-            return result
-
-        # Check if text matches any seed case text
-        for sid, seed in self.seed_cases.items():
-            if seed.get("complaint", "").strip() == complaint_text.strip():
+        # In dev/test only: check if matches known seed case to conserve quota
+        if app_mode != "production":
+            if case_id and case_id in self.seed_cases:
+                seed = self.seed_cases[case_id]
                 result = self._build_from_seed(seed, complaint_text)
                 self._save_cached_result(cache_key, result)
                 return result
 
-        # If live Gemini is enabled and key exists and not forcing offline
-        if not force_offline and self.api_key:
-            try:
-                result = self._extract_with_gemini(complaint_text)
-                if result:
+            for sid, seed in self.seed_cases.items():
+                if seed.get("complaint", "").strip() == complaint_text.strip():
+                    result = self._build_from_seed(seed, complaint_text)
                     self._save_cached_result(cache_key, result)
                     return result
-            except Exception as e:
-                # Graceful fallback to offline rule engine without failing
-                pass
 
-        # Use Offline Rule-Based Extraction Engine
+        # Determine whether live AI should be used
+        should_use_live_ai = (not force_offline) and (ai_mode == "live" or (app_mode == "production" and ai_mode != "offline"))
+
+        if should_use_live_ai:
+            if not self.api_key:
+                if app_mode == "production":
+                    raise RuntimeError("Live AI extraction failed: GEMINI_API_KEY is not configured in production.")
+            else:
+                try:
+                    result = self._extract_with_gemini(complaint_text)
+                    if result:
+                        self._save_cached_result(cache_key, result)
+                        return result
+                    elif app_mode == "production":
+                        raise RuntimeError("Live AI extraction returned an empty or invalid response in production.")
+                except Exception as e:
+                    if app_mode == "production":
+                        raise RuntimeError(f"Live AI extraction failed in production: {str(e)}") from e
+
+        # Use Offline Rule-Based Extraction Engine (for dev/test or when AI_MODE=offline)
         result = self._extract_rule_based(complaint_text)
         self._save_cached_result(cache_key, result)
         return result

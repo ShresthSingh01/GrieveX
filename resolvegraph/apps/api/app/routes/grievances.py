@@ -162,3 +162,27 @@ def provide_missing_info(case_id: str, payload: ProvideMissingInfoRequest, db: S
         value=payload.value,
         submitted_by=payload.submitted_by
     )
+
+@router.get("/{case_id}/resolution-debt")
+def get_resolution_debt(case_id: str, db: Session = Depends(get_db)):
+    """Formal, measurable resolution debt scorecard; case closure requires total debt == 0"""
+    service = CaseService(db)
+    try:
+        return service.get_resolution_debt(case_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+@router.get("/{case_id}/plans")
+def get_plan_versions(case_id: str, db: Session = Depends(get_db)):
+    """Returns immutable history of all generated and replanned resolution DAG versions"""
+    service = CaseService(db)
+    return service.get_plan_versions(case_id)
+
+@router.get("/{case_id}/certificate")
+def get_resolution_certificate(case_id: str, db: Session = Depends(get_db)):
+    """Generates canonical, cryptographically verifiable resolution certificate with SHA-256 digest"""
+    service = CaseService(db)
+    try:
+        return service.generate_resolution_certificate(case_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))

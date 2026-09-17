@@ -1,17 +1,27 @@
 import json
 import uuid
-import datetime
+import hashlib
+from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
+from sqlalchemy import func
+
 from ..models.models import (
     CaseModel, ClaimModel, AuthorityModel, TaskModel,
-    EvidenceModel, ConflictModel, MissingInfoModel, AuditEventModel
+    EvidenceModel, EvidenceLinkModel, ConflictModel,
+    MissingInfoModel, AuditEventModel, AssumptionModel,
+    PlanVersionModel
 )
+from ..core.state_machine import transition_case, transition_task, can_transition_case
+from .resolution_debt import ResolutionDebtCalculator
 from .....intelligence.extraction.extractor import GrievanceExtractor
 from .....intelligence.planning.dag_builder import DAGBuilder
 from .....intelligence.planning.scheduler import TaskScheduler
 from .....intelligence.replanning.engine import ReplanningEngine
 from .....intelligence.verification.closure import ClosureVerificationEngine
+
+def utc_now():
+    return datetime.now(timezone.utc)
 
 class CaseService:
     def __init__(self, db: Session):
@@ -19,6 +29,7 @@ class CaseService:
         self.extractor = GrievanceExtractor()
         self.dag_builder = DAGBuilder()
         self.replanning_engine = ReplanningEngine()
+        self.debt_calculator = ResolutionDebtCalculator()
 
     def create_case(
         self,
@@ -30,7 +41,6 @@ class CaseService:
     ) -> CaseModel:
         case_id = f"GRV-{str(uuid.uuid4())[:6].upper()}"
         if not title:
-            # Generate clean title from first sentence
             first_sentence = complaint_text.split(".")[0].strip()
             title = first_sentence[:80] if len(first_sentence) > 5 else "Public Grievance Case"
 
@@ -46,7 +56,6 @@ class CaseService:
         self.db.add(case)
         self.db.commit()
 
-        # Record Audit Event
         self._record_audit(case_id, "CASE_CREATED", f"Citizen grievance registered: '{title}'", "Citizen Submission", "CITIZEN")
         return case
 
@@ -55,11 +64,13 @@ class CaseService:
         if not case:
             raise ValueError(f"Case {case_id} not found")
 
-        # 1. LLM / Offline Extraction
+        # 1. State transition: NEW -> ANALYZED (or ANALYZING -> ANALYZED)
+        transition_case(case, "ANALYZED")
+
+        # 2. Extract structured claims, authorities, conflicts
         extraction = self.extractor.extract(case.complaint_text, force_offline=force_offline, case_id=case.id)
 
         case.goal = extraction.goal
-        case.status = "ANALYZED"
         if extraction.authorities:
             case.assumed_authority = extraction.authorities[0].name
 
@@ -69,8 +80,10 @@ class CaseService:
         self.db.query(ConflictModel).filter(ConflictModel.case_id == case_id).delete()
         self.db.query(MissingInfoModel).filter(MissingInfoModel.case_id == case_id).delete()
         self.db.query(TaskModel).filter(TaskModel.case_id == case_id).delete()
+        self.db.query(AssumptionModel).filter(AssumptionModel.case_id == case_id).delete()
+        self.db.query(PlanVersionModel).filter(PlanVersionModel.case_id == case_id).delete()
 
-        # 2. Persist Claims
+        # 3. Persist Claims
         for c in extraction.claims:
             claim_rec = ClaimModel(
                 id=f"{case_id}-{c.id}",
@@ -81,7 +94,7 @@ class CaseService:
             )
             self.db.add(claim_rec)
 
-        # 3. Persist Authorities
+        # 4. Persist Authorities
         for a in extraction.authorities:
             auth_rec = AuthorityModel(
                 id=f"{case_id}-{a.id}",
@@ -93,7 +106,7 @@ class CaseService:
             )
             self.db.add(auth_rec)
 
-        # 4. Persist Conflicts
+        # 5. Persist Conflicts
         for cf in extraction.conflicts:
             conf_rec = ConflictModel(
                 id=f"{case_id}-{cf.id}",
@@ -106,7 +119,7 @@ class CaseService:
             )
             self.db.add(conf_rec)
 
-        # 5. Persist Missing Information
+        # 6. Persist Missing Information
         for m in extraction.missing_information:
             miss_rec = MissingInfoModel(
                 id=f"{case_id}-{m.id}",
@@ -119,7 +132,19 @@ class CaseService:
             )
             self.db.add(miss_rec)
 
-        # 6. Build Deterministic DAG Plan
+        # 7. Persist First-Class Assumptions
+        primary_auth = case.assumed_authority or "Municipal Administration"
+        assump1 = AssumptionModel(
+            id=f"ASM-{case_id}-1",
+            case_id=case_id,
+            statement=f"Primary statutory jurisdiction for resolution resides with {primary_auth}.",
+            source="RESOLUTION_COMPILER",
+            confidence=0.90,
+            status="ACTIVE"
+        )
+        self.db.add(assump1)
+
+        # 8. Build Deterministic DAG Plan
         dag_plan = self.dag_builder.build_dag(case_id, extraction, assumed_authority=case.assumed_authority)
         case.workflow_name = dag_plan.get("workflow_name", "Resolution Plan")
 
@@ -144,17 +169,35 @@ class CaseService:
             )
             self.db.add(task_rec)
 
-        case.status = "IN_PROGRESS"
+        # 9. Create Plan Version 1 (First-class versioning)
+        pv1 = PlanVersionModel(
+            id=f"PV-{case_id}-1",
+            case_id=case_id,
+            version_number=1,
+            reason="Initial deterministic resolution DAG compilation",
+            created_by="RESOLUTION_COMPILER",
+            status="ACTIVE",
+            graph_json=json.dumps(dag_plan),
+            task_diff_json=json.dumps({
+                "changed": [],
+                "preserved": [t["key"] for t in dag_plan.get("tasks", [])],
+                "added": [t["key"] for t in dag_plan.get("tasks", [])],
+                "removed": []
+            })
+        )
+        self.db.add(pv1)
+
+        transition_case(case, "IN_PROGRESS")
         self.db.commit()
 
         # Audit Event
         self._record_audit(
             case_id,
             "GRIEVANCE_ANALYZED_AND_PLANNED",
-            f"Extracted {len(extraction.claims)} claims, {len(extraction.authorities)} authorities. Generated DAG with {len(dag_plan.get('tasks', []))} tasks.",
+            f"Extracted {len(extraction.claims)} claims, {len(extraction.authorities)} authorities. Generated Plan V1 with {len(dag_plan.get('tasks', []))} tasks.",
             f"Mode: {extraction.extractor_mode}",
             "INTELLIGENCE_ENGINE",
-            {"workflow": case.workflow_name}
+            {"workflow": case.workflow_name, "plan_version": 1}
         )
 
         return case
@@ -168,11 +211,15 @@ class CaseService:
         authorities = self.db.query(AuthorityModel).filter(AuthorityModel.case_id == case_id).all()
         conflicts = self.db.query(ConflictModel).filter(ConflictModel.case_id == case_id).all()
         missing_info = self.db.query(MissingInfoModel).filter(MissingInfoModel.case_id == case_id).all()
-        tasks = self.db.query(TaskModel).filter(TaskModel.case_id == case_id).order_index_asc() if hasattr(TaskModel, 'order_index_asc') else self.db.query(TaskModel).filter(TaskModel.case_id == case_id).order_by(TaskModel.order_index).all()
+        assumptions = self.db.query(AssumptionModel).filter(AssumptionModel.case_id == case_id).all()
+        tasks = self.db.query(TaskModel).filter(TaskModel.case_id == case_id).order_by(TaskModel.order_index).all()
         audit_events = self.db.query(AuditEventModel).filter(AuditEventModel.case_id == case_id).order_by(AuditEventModel.created_at.desc()).all()
+        latest_plan = self.db.query(PlanVersionModel).filter(PlanVersionModel.case_id == case_id).order_by(PlanVersionModel.version_number.desc()).first()
 
         task_dicts = [self._task_model_to_dict(t) for t in tasks]
         ready_count = len([t for t in task_dicts if t["status"] == "READY"])
+
+        debt_info = self.debt_calculator.calculate(case_id, self.db)
 
         return {
             "id": case.id,
@@ -183,99 +230,106 @@ class CaseService:
             "category": case.category,
             "goal": case.goal,
             "status": case.status,
-            "assumed_authority": case.assumed_authority,
             "workflow_name": case.workflow_name,
-            "claims": [{"id": c.id, "text": c.text, "category": c.category, "confidence": c.confidence} for c in claims],
-            "authorities": [{"id": a.id, "name": a.name, "role": a.role, "department": a.department, "confidence": a.confidence} for a in authorities],
-            "conflicts": [{"id": cf.id, "claim_text": cf.claim_text, "party_a": cf.party_a, "party_b": cf.party_b, "description": cf.description, "status": cf.status, "resolution_notes": cf.resolution_notes} for cf in conflicts],
-            "missing_info": [{"id": m.id, "field_name": m.field_name, "description": m.description, "importance": m.importance, "action_required": m.action_required, "status": m.status, "provided_value": m.provided_value} for m in missing_info],
+            "assumed_authority": case.assumed_authority,
+            "active_plan_version": latest_plan.version_number if latest_plan else 1,
+            "resolution_debt_score": debt_info["total_debt_score"],
+            "can_close": debt_info["can_close"],
+            "claims": [
+                {"id": c.id, "text": c.text, "category": c.category, "confidence": c.confidence}
+                for c in claims
+            ],
+            "authorities": [
+                {"id": a.id, "name": a.name, "role": a.role, "department": a.department, "confidence": a.confidence}
+                for a in authorities
+            ],
+            "conflicts": [
+                {"id": cf.id, "claim_text": cf.claim_text, "party_a": cf.party_a, "party_b": cf.party_b, "description": cf.description, "status": cf.status, "resolution_notes": cf.resolution_notes}
+                for cf in conflicts
+            ],
+            "missing_info": [
+                {"id": m.id, "field_name": m.field_name, "description": m.description, "importance": m.importance, "action_required": m.action_required, "status": m.status, "provided_value": m.provided_value}
+                for m in missing_info
+            ],
+            "assumptions": [
+                {"id": asm.id, "statement": asm.statement, "status": asm.status, "confidence": asm.confidence, "invalidated_by_evidence_id": asm.invalidated_by_evidence_id}
+                for asm in assumptions
+            ],
             "tasks": task_dicts,
             "audit_events": [
                 {
-                    "id": a.id,
-                    "case_id": a.case_id,
-                    "event_type": a.event_type,
-                    "description": a.description,
-                    "reason": a.reason,
-                    "actor": a.actor,
-                    "metadata": json.loads(a.metadata_json or "{}"),
-                    "created_at": a.created_at
+                    "id": ev.id,
+                    "event_type": ev.event_type,
+                    "description": ev.description,
+                    "reason": ev.reason,
+                    "actor": ev.actor,
+                    "metadata": json.loads(ev.metadata_json or "{}"),
+                    "created_at": ev.created_at.isoformat() if ev.created_at else None
                 }
-                for a in audit_events
+                for ev in audit_events
             ],
             "ready_tasks_count": ready_count,
-            "created_at": case.created_at,
-            "updated_at": case.updated_at
-        }
-
-    def get_graph(self, case_id: str) -> Dict[str, Any]:
-        case = self.db.query(CaseModel).filter(CaseModel.id == case_id).first()
-        if not case:
-            raise ValueError(f"Case {case_id} not found")
-
-        tasks = self.db.query(TaskModel).filter(TaskModel.case_id == case_id).order_by(TaskModel.order_index).all()
-        task_dicts = [self._task_model_to_dict(t) for t in tasks]
-
-        # Use DAGBuilder to calculate React Flow layout
-        # Strip case_id prefix for cleaner UI node labels
-        for t in task_dicts:
-            t["id"] = t["id"].replace(f"{case_id}-", "")
-            t["dependencies"] = [d.replace(f"{case_id}-", "") for d in t["dependencies"]]
-
-        nodes, edges = self.dag_builder.generate_graph_elements(task_dicts)
-        ready_count = len([t for t in task_dicts if t["status"] == "READY"])
-
-        return {
-            "case_id": case_id,
-            "workflow_name": case.workflow_name or "Resolution Graph",
-            "nodes": nodes,
-            "edges": edges,
-            "active_tasks_count": len([t for t in task_dicts if not t.get("invalidated")]),
-            "ready_tasks_count": ready_count,
-            "parallel_execution_enabled": True
+            "total_tasks_count": len(tasks),
+            "created_at": case.created_at.isoformat() if case.created_at else None,
+            "updated_at": case.updated_at.isoformat() if case.updated_at else None
         }
 
     def complete_task(self, case_id: str, task_id: str, evidence_title: str, evidence_content: str, submitted_by: str) -> Dict[str, Any]:
         full_task_id = task_id if task_id.startswith(case_id) else f"{case_id}-{task_id}"
         task = self.db.query(TaskModel).filter(TaskModel.id == full_task_id, TaskModel.case_id == case_id).first()
         if not task:
-            raise ValueError(f"Task {task_id} not found")
+            raise ValueError(f"Task {task_id} not found for case {case_id}")
 
-        if task.invalidated:
-            raise ValueError(f"Cannot complete invalidated task: {task.invalidated_reason}")
+        if task.status == "INVALIDATED":
+            raise ValueError(f"Cannot complete invalidated task: {task.title}")
 
-        if task.status == "HUMAN_APPROVAL_REQUIRED":
-            raise ValueError(f"Task {task_id} requires human approval before completion.")
+        # 1. State transition
+        transition_task(task, "COMPLETED")
 
-        # 1. Update task state
-        task.status = "COMPLETED"
+        # 2. Compute SHA-256 evidence hash
+        sha256_hash = hashlib.sha256(evidence_content.encode("utf-8")).hexdigest()
         submitted = task.submitted_evidence
         evidence_entry = {
             "title": evidence_title,
             "content": evidence_content,
             "submitted_by": submitted_by,
-            "timestamp": datetime.datetime.utcnow().isoformat()
+            "sha256": sha256_hash,
+            "timestamp": utc_now().isoformat()
         }
         submitted.append(evidence_entry)
         task.submitted_evidence = submitted
 
-        # 2. Record in evidence table
+        # 3. Record in evidence table with SHA-256
+        ev_id = f"EV-{str(uuid.uuid4())[:8]}"
         ev_model = EvidenceModel(
-            id=f"EV-{str(uuid.uuid4())[:8]}",
+            id=ev_id,
             case_id=case_id,
             task_id=full_task_id,
             evidence_type="TASK_COMPLETION",
             title=evidence_title,
             content=evidence_content,
+            sha256=sha256_hash,
+            mime_type="text/plain",
+            source_type="TEXT",
             submitted_by=submitted_by
         )
         self.db.add(ev_model)
 
-        # 3. Recalculate downstream task statuses
+        # 4. Record Evidence Provenance Link
+        ev_link = EvidenceLinkModel(
+            id=f"LNK-{str(uuid.uuid4())[:8]}",
+            evidence_id=ev_id,
+            entity_type="TASK",
+            entity_id=full_task_id,
+            relationship="completes",
+            confidence=1.0
+        )
+        self.db.add(ev_link)
+
+        # 5. Recalculate downstream task statuses
         all_tasks = self.db.query(TaskModel).filter(TaskModel.case_id == case_id).order_by(TaskModel.order_index).all()
         task_dicts = [self._task_model_to_dict(t) for t in all_tasks]
 
-        # Use normalized short IDs for scheduler evaluation
         short_dicts = []
         for td in task_dicts:
             d = dict(td)
@@ -290,7 +344,11 @@ class CaseService:
             t_full = f"{case_id}-{st['id']}"
             t_obj = next((x for x in all_tasks if x.id == t_full), None)
             if t_obj and not t_obj.invalidated and t_obj.status != "COMPLETED":
-                t_obj.status = st["status"]
+                if t_obj.status != st["status"]:
+                    try:
+                        transition_task(t_obj, st["status"])
+                    except Exception:
+                        t_obj.status = st["status"]
 
         self.db.commit()
 
@@ -298,12 +356,13 @@ class CaseService:
         self._record_audit(
             case_id,
             "TASK_COMPLETED",
-            f"Task '{task.title}' completed by {submitted_by}. Evidence submitted: '{evidence_title}'",
+            f"Task '{task.title}' completed by {submitted_by}. Evidence hash: {sha256_hash[:12]}...",
             "Prerequisites verified, dependent tasks updated.",
-            submitted_by
+            submitted_by,
+            {"task_id": full_task_id, "sha256": sha256_hash}
         )
 
-        return {"success": True, "task_id": task_id, "new_status": "COMPLETED"}
+        return {"success": True, "task_id": task_id, "new_status": "COMPLETED", "sha256": sha256_hash}
 
     def approve_task(self, case_id: str, task_id: str, officer_name: str, officer_role: str, decision: str, notes: str) -> Dict[str, Any]:
         full_task_id = task_id if task_id.startswith(case_id) else f"{case_id}-{task_id}"
@@ -313,8 +372,8 @@ class CaseService:
 
         if decision == "APPROVED":
             task.approved_by = f"{officer_name} ({officer_role})"
-            task.approved_at = datetime.datetime.utcnow()
-            task.status = "READY"
+            task.approved_at = utc_now()
+            transition_task(task, "READY")
             self.db.commit()
 
             self._record_audit(
@@ -344,6 +403,8 @@ class CaseService:
             raise ValueError(f"Case {case_id} not found")
 
         ev_id = f"EV-{str(uuid.uuid4())[:8]}"
+        sha256_hash = hashlib.sha256(content.encode("utf-8")).hexdigest()
+
         ev = EvidenceModel(
             id=ev_id,
             case_id=case_id,
@@ -351,6 +412,9 @@ class CaseService:
             evidence_type=evidence_type,
             title=title,
             content=content,
+            sha256=sha256_hash,
+            mime_type="text/plain",
+            source_type="DOCUMENT",
             submitted_by=submitted_by
         )
         self.db.add(ev)
@@ -375,10 +439,33 @@ class CaseService:
             submitted_by=submitted_by
         )
 
-        # 3. If plan changed, sync DB models
+        # 3. If plan changed: Invalidate assumption and create new Plan Version
         if replan_res.get("plan_changed"):
             case.status = "REPLANNED"
-            # Update existing tasks
+
+            # Invalidate initial jurisdictional assumption with provenance link
+            active_assump = self.db.query(AssumptionModel).filter(
+                AssumptionModel.case_id == case_id,
+                AssumptionModel.status == "ACTIVE"
+            ).all()
+            for asm in active_assump:
+                asm.status = "INVALIDATED"
+                asm.invalidated_at = utc_now()
+                asm.invalidated_by_evidence_id = ev_id
+
+                # Evidence link
+                link = EvidenceLinkModel(
+                    id=f"LNK-{str(uuid.uuid4())[:8]}",
+                    evidence_id=ev_id,
+                    entity_type="ASSUMPTION",
+                    entity_id=asm.id,
+                    relationship="invalidates",
+                    confidence=0.98
+                )
+                self.db.add(link)
+
+            # Update existing tasks & add newly spawned tasks
+            new_tasks_added = []
             for st in replan_res.get("tasks", []):
                 full_tid = f"{case_id}-{st['id']}"
                 existing = next((x for x in all_tasks if x.id == full_tid), None)
@@ -388,7 +475,6 @@ class CaseService:
                     existing.invalidated_reason = st.get("invalidated_reason")
                     existing.dependencies = [f"{case_id}-{d}" for d in st.get("dependencies", [])]
                 else:
-                    # New task added by replanner
                     new_t = TaskModel(
                         id=full_tid,
                         case_id=case_id,
@@ -408,6 +494,33 @@ class CaseService:
                         order_index=st.get("order_index", len(all_tasks) + 1)
                     )
                     self.db.add(new_t)
+                    new_tasks_added.append(st["key"])
+
+            # Supersede previous active plan version and create Plan Version N+1
+            prev_versions = self.db.query(PlanVersionModel).filter(
+                PlanVersionModel.case_id == case_id
+            ).all()
+            for pv in prev_versions:
+                pv.status = "SUPERSEDED"
+
+            next_version_num = len(prev_versions) + 1
+            new_pv = PlanVersionModel(
+                id=f"PV-{case_id}-{next_version_num}",
+                case_id=case_id,
+                version_number=next_version_num,
+                reason=replan_res.get("replan_reason"),
+                trigger_evidence_id=ev_id,
+                created_by=submitted_by,
+                status="ACTIVE",
+                graph_json=json.dumps(replan_res),
+                task_diff_json=json.dumps({
+                    "changed": replan_res.get("invalidated_tasks", []),
+                    "preserved": [t.key for t in all_tasks if not t.invalidated],
+                    "added": new_tasks_added,
+                    "removed": []
+                })
+            )
+            self.db.add(new_pv)
 
             # Mark related conflicts as RESOLVED if jurisdiction is confirmed
             conflicts = self.db.query(ConflictModel).filter(ConflictModel.case_id == case_id).all()
@@ -418,7 +531,7 @@ class CaseService:
 
             self.db.commit()
 
-            # Record Audit Event with Rich Decision Metadata
+            # Record Audit Event
             self._record_audit(
                 case_id,
                 "DYNAMIC_REPLANNING_EXECUTED",
@@ -427,12 +540,9 @@ class CaseService:
                 submitted_by,
                 {
                     "rule_id": replan_res.get("rule_id", "RULE-JUR-01"),
-                    "why": replan_res.get("replan_reason"),
-                    "shift": replan_res.get("shift"),
-                    "old_authority": replan_res.get("old_authority"),
-                    "new_authority": replan_res.get("new_authority"),
-                    "invalidated_tasks": replan_res.get("invalidated_tasks"),
-                    "new_tasks": replan_res.get("new_tasks")
+                    "plan_version": next_version_num,
+                    "trigger_evidence_id": ev_id,
+                    "sha256": sha256_hash
                 }
             )
         else:
@@ -442,10 +552,35 @@ class CaseService:
                 "EVIDENCE_RECORDED",
                 f"New evidence uploaded: '{title}' by {submitted_by}",
                 "Plan remains valid",
-                submitted_by
+                submitted_by,
+                {"evidence_id": ev_id, "sha256": sha256_hash}
             )
 
+        replan_res["evidence_id"] = ev_id
+        replan_res["sha256"] = sha256_hash
         return replan_res
+
+    def get_resolution_debt(self, case_id: str) -> Dict[str, Any]:
+        return self.debt_calculator.calculate(case_id, self.db)
+
+    def get_plan_versions(self, case_id: str) -> List[Dict[str, Any]]:
+        versions = self.db.query(PlanVersionModel).filter(
+            PlanVersionModel.case_id == case_id
+        ).order_by(PlanVersionModel.version_number.asc()).all()
+
+        return [
+            {
+                "id": v.id,
+                "version_number": v.version_number,
+                "reason": v.reason,
+                "trigger_evidence_id": v.trigger_evidence_id,
+                "status": v.status,
+                "created_by": v.created_by,
+                "created_at": v.created_at.isoformat() if v.created_at else None,
+                "task_diff": json.loads(v.task_diff_json or "{}")
+            }
+            for v in versions
+        ]
 
     def verify_closure(self, case_id: str) -> Dict[str, Any]:
         tasks = self.db.query(TaskModel).filter(TaskModel.case_id == case_id).all()
@@ -460,7 +595,18 @@ class CaseService:
             case_id, task_dicts, conflict_dicts, missing_dicts
         )
 
+        debt_report = self.debt_calculator.calculate(case_id, self.db)
         case = self.db.query(CaseModel).filter(CaseModel.id == case_id).first()
+
+        # Strict Resolution Debt enforcement: If resolution debt > 0, closure is strictly denied
+        if not debt_report["can_close"]:
+            verification_result["can_close"] = False
+            verification_result["recommendation"] = "DO_NOT_CLOSE"
+            reasons = verification_result.get("blocking_reasons", [])
+            for item in debt_report["debt_items"]:
+                reasons.append(f"Resolution Debt: {item['title']}")
+            verification_result["blocking_reasons"] = list(set(reasons))
+
         checklist = verification_result.get("checklist", [])
         passed_gates = [c["criterion"] for c in checklist if c.get("passed")]
         failed_gates = [c["criterion"] for c in checklist if not c.get("passed")]
@@ -470,13 +616,13 @@ class CaseService:
             self._record_audit(
                 case_id,
                 "CASE_VERIFIED_AND_RESOLVED",
-                "Case achieved evidence-based resolution and passed all closure criteria.",
+                "Case achieved zero resolution debt and passed all statutory verification criteria.",
                 "Formal closure authorized.",
                 "Grievance Officer",
                 {
                     "rule_id": "RULE-CLOSURE-VERIFIED",
-                    "why": "All 5 statutory closure criteria satisfied",
-                    "passed_gates": passed_gates
+                    "passed_gates": passed_gates,
+                    "resolution_debt": 0
                 }
             )
         else:
@@ -485,13 +631,12 @@ class CaseService:
                 case_id,
                 "CLOSURE_VERIFICATION_REJECTED",
                 f"Closure rejected: {'; '.join(verification_result.get('blocking_reasons', []))}",
-                "Premature closure prevented by policy checks",
+                "Premature closure prevented by zero-debt policy",
                 "VERIFICATION_ENGINE",
                 {
                     "rule_id": "RULE-CLOSURE-GATE-FAILED",
-                    "why": f"Closure prevented by {len(failed_gates)} gate failure(s): {'; '.join(verification_result.get('blocking_reasons', []))}",
                     "failed_gates": failed_gates,
-                    "passed_gates": passed_gates,
+                    "debt_score": debt_report["total_debt_score"],
                     "blocking_reasons": verification_result.get("blocking_reasons", [])
                 }
             )
@@ -499,6 +644,40 @@ class CaseService:
         self.db.commit()
         return verification_result
 
+    def generate_resolution_certificate(self, case_id: str) -> Dict[str, Any]:
+        """
+        Generates canonical, cryptographically hashed (SHA-256) resolution certificate.
+        Derives solely from actual database records (claims, tasks, evidence, audit logs).
+        """
+        case = self.db.query(CaseModel).filter(CaseModel.id == case_id).first()
+        if not case:
+            raise ValueError(f"Case {case_id} not found")
+
+        claims = self.db.query(ClaimModel).filter(ClaimModel.case_id == case_id).all()
+        tasks = self.db.query(TaskModel).filter(TaskModel.case_id == case_id, TaskModel.status == "COMPLETED").all()
+        evidence = self.db.query(EvidenceModel).filter(EvidenceModel.case_id == case_id).all()
+        plans = self.db.query(PlanVersionModel).filter(PlanVersionModel.case_id == case_id).all()
+
+        certificate_payload = {
+            "certificate_type": "OFFICIAL_RESOLUTION_CERTIFICATE",
+            "case_id": case.id,
+            "title": case.title,
+            "citizen_name": case.citizen_name,
+            "location": case.location,
+            "category": case.category,
+            "status": case.status,
+            "claims_count": len(claims),
+            "completed_tasks": [t.title for t in tasks],
+            "evidence_hashes": [e.sha256 for e in evidence if e.sha256],
+            "total_plan_versions": len(plans),
+            "certified_at": utc_now().isoformat()
+        }
+
+        canonical_string = json.dumps(certificate_payload, sort_keys=True)
+        certificate_hash = hashlib.sha256(canonical_string.encode("utf-8")).hexdigest()
+
+        certificate_payload["certificate_hash"] = certificate_hash
+        return certificate_payload
 
     def resolve_missing_info(self, case_id: str, field_name: str, value: str, submitted_by: str) -> Dict[str, Any]:
         miss = self.db.query(MissingInfoModel).filter(
@@ -506,7 +685,6 @@ class CaseService:
             MissingInfoModel.field_name == field_name
         ).first()
         if not miss:
-            # Fallback by case id only
             miss = self.db.query(MissingInfoModel).filter(MissingInfoModel.case_id == case_id).first()
 
         if miss:
@@ -523,6 +701,41 @@ class CaseService:
             )
             return {"success": True, "field_name": miss.field_name, "status": "PROVIDED"}
         return {"success": False, "message": "Missing info record not found"}
+
+    def get_graph(self, case_id: str) -> Dict[str, Any]:
+        case = self.db.query(CaseModel).filter(CaseModel.id == case_id).first()
+        if not case:
+            raise ValueError(f"Case {case_id} not found")
+
+        tasks = self.db.query(TaskModel).filter(TaskModel.case_id == case_id).order_by(TaskModel.order_index).all()
+        task_dicts = [self._task_model_to_dict(t) for t in tasks]
+
+        nodes = []
+        edges = []
+
+        for i, t in enumerate(task_dicts):
+            nodes.append({
+                "id": t["id"],
+                "data": {
+                    "label": t["title"],
+                    "authority": t["authority"],
+                    "risk_level": t["risk_level"],
+                    "status": t["status"],
+                    "requires_approval": t["requires_human_approval"],
+                    "invalidated": t.get("invalidated", False)
+                },
+                "position": {"x": 100 + (i % 3) * 280, "y": 80 + (i // 3) * 160}
+            })
+
+            for dep_id in t.get("dependencies", []):
+                edges.append({
+                    "id": f"e-{dep_id}-{t['id']}",
+                    "source": dep_id,
+                    "target": t["id"],
+                    "animated": t["status"] in ["READY", "IN_PROGRESS"]
+                })
+
+        return {"nodes": nodes, "edges": edges}
 
     def _task_model_to_dict(self, t: TaskModel) -> Dict[str, Any]:
         return {
@@ -542,7 +755,7 @@ class CaseService:
             "invalidated": t.invalidated,
             "invalidated_reason": t.invalidated_reason,
             "approved_by": t.approved_by,
-            "approved_at": t.approved_at,
+            "approved_at": t.approved_at.isoformat() if t.approved_at else None,
             "order_index": t.order_index
         }
 
