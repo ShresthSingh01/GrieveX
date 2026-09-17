@@ -31,6 +31,14 @@ app.include_router(demo.router)
 def on_startup():
     init_db()
 
+@app.get("/")
+def root():
+    return {
+        "message": "ResolveGraph API is running",
+        "docs": "/docs",
+        "health": "/health"
+    }
+
 @app.get("/health")
 def health_check():
     return {
